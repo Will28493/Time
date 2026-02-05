@@ -1,65 +1,72 @@
-import time
+from enum import Enum
+from dataclasses import dataclass
+from datetime import timedelta
 
-class BargeLightingSystem:
-    def __init__(self, match_duration=150):
-        # State tracking
-        self.red_algae_scored = 0
-        self.blue_algae_scored = 0
-        self.total_segments = 6
 
-        # Timing constants (in seconds)
-        self.match_duration = match_duration
-        self.endgame_alert = 20
-        self.coop_threshold = 2
-        self.post_match_delay = 3
 
-        # Internal flags
-        self.match_active = False
-        self.start_time = 0
+class MatchPhase(Enum):
+    AUTO = "Autonomous"
+    TRANSITION = "Auto-to-Teleop Delay"
+    TELEOP = "Teleoperated"
 
-    def start_match(self):
-        self.start_time = time.time()
-        self.match_active = True
 
-    def get_remaining_time(self):
-        if not self.match_active:
-            return 0
-        elapsed = time.time() - self.start_time
-        return max(0, self.match_duration - elapsed)
 
-    def update_lights(self):
-        remaining = self.get_remaining__time()
+@dataclass(frozen=True)
+class Phase:
+    phase: MatchPhase
+    duration: timedelta
+    description: str
 
-        # 1. Post-Match logic (3-second buffer)
-        if remaining == 0:
-            elapsed_since_end = time.time() - (self.start_time + self.match_duration)
-            if elapsed_since_end < self.post_match_delay:
-                return "ALL_ON_FOR_REFEREES"
-            else:
-                return "ÄLL_OFF"
 
-        # 2. Endgame Logic (Final 20 seconds - Flashing)
-        if remaining <= self.endgame_alert:
-            # Use modulo to create a flash effect every 0.5 seconds
-            return "Flashing" if (time.time() % 1.0 > 0.5) else "ALL_OFF"
+class RoboticsMatch:
+    AUTO_DURATION = timedelta(seconds=15)
+    TRANSITION_DELAY = timedelta(seconds=3)
+    TELEOP_DURATION = timedelta(minutes=2, seconds=15)
 
-        # 3. Coopertition Bonus Logic
-        # Check if both alliances have hit the threshold
-        if self.red_algae_scored >= self.coop_threshold and \
-           self.blue_algae_scored >= self.coop_threshold:
-            return "ALL_ON_COOP"
+    def __init__(self):
+        self.phases = [
+            Phase(
+                phase=MatchPhase.AUTO,
+                duration=self.AUTO_DURATION,
+                description=(
+                    "Robots operate without drive team control. "
+                    "Robots attempt to leave the starting line, score, "
+                    "and retrieve scoring elements."
+                ),
+            ),
+            Phase(
+                phase=MatchPhase.TRANSITION,
+                duration=self.TRANSITION_DELAY,
+                description="Delay between auto and teleop for scoring purposes.",
+            ),
+            Phase(
+                phase=MatchPhase.TELEOP
+                duration=self.TELEOP_DURATION,
+                description=(
+                    "Drivers remotely control robots to retrieve and score "
+                    "scoring elements and climb their cages."
+                ),
+            ),
+        ]
 
-        # 4. Standard Scoring Advancement
-        # Return how many segments should be lit based on total scored
-        total_scored = self.red_algae_scored + self.blue_algae_scored
-        return f"SEGMENTS_LIT: {min(total_scored, self.total_segments)}"
+def total_match_time(self) -> timedelta:
+    return sum((phase.duration for phase in self.phases), timedelta())
 
-# --- Simulation of the Match ---
-barge = BargeLightingSystem()
-barge.start_match()
+def print_timeline(self):
+    current_time = timedelta()
+    for phase in self.phases:
+        start = current_time
+        end = start + phase.duration
+        print(
+            f"{phase.phase.value}: "
+            f"{start} → {end} "
+            f"({phase.duration})"
+        )
+        current_time = end
 
-# Example: Scoring an Algae
-barge.red_algae_scored += 1
-print(barge.update_lights()) # Output: SEGMENTs_LIT: 1
 
-def determine time phase:
+
+if __name__ == "__main__":
+    match = RoboticsMatch()
+    match.print_timeline()
+    print("Total match time:", match.total_match_time())
